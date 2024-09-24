@@ -20,8 +20,10 @@ public class Employee {
     }
     @Override
     public boolean equals(Object obj) {
-        //TODO
-        //according to only id
-        throw new UnsupportedOperationException();
+       boolean res = false;
+       if (obj instanceof Employee empl) {
+            res = id == empl.id;
+       }
+       return res;
     }
 }

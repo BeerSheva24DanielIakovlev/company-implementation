@@ -6,47 +6,97 @@ public class CompanyImpl implements Company{
    private TreeMap<Long, Employee> employees = new TreeMap<>();
    private HashMap<String, List<Employee>> employeesDepartment = new HashMap<>();
    private TreeMap<Float, List<Manager>> managersFactor = new TreeMap<>();
+private class CompanyIterator implements Iterator<Employee> {
+    Iterator<Employee> iterator = employees.values().iterator();
+    Employee lastIterated;
+    @Override
+    public boolean hasNext() {
+       return iterator.hasNext();
+    }
 
     @Override
+    public Employee next() {
+       lastIterated = iterator.next();
+       return lastIterated;
+    }
+    @Override
+    public void remove() {
+       iterator.remove();
+       removeFromIndexMaps(lastIterated);
+    }
+}
+    @Override
     public Iterator<Employee> iterator() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'iterator'");
+       return new CompanyIterator();
     }
 
     @Override
     public void addEmployee(Employee empl) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'addEmployee'");
+        long id = empl.getId();
+        if (employees.putIfAbsent(id, empl) != null) {
+            throw new IllegalStateException("Already exists employee " + id);
+        }
+        addIndexMaps(empl);
     }
+
+    private void addIndexMaps(Employee empl) {
+       employeesDepartment.computeIfAbsent(empl.getDepartment(), k -> new ArrayList<>()).add(empl);
+       if (empl instanceof Manager manager) {
+            managersFactor.computeIfAbsent(manager.getFactor(), k -> new ArrayList<>()).add(manager);
+       }
+    }
+
+    
 
     @Override
     public Employee getEmployee(long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getEmployee'");
+        return employees.get(id);
     }
 
     @Override
     public Employee removeEmployee(long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'removeEmployee'");
+        Employee empl = employees.remove(id);
+        if(empl == null) {
+            throw new NoSuchElementException("Not found employee " + id);
+        }
+        removeFromIndexMaps(empl);
+        return empl;
+    }
+
+
+    private void removeFromIndexMaps(Employee empl) {
+        removeIndexMap(empl.getDepartment(), employeesDepartment, empl);
+        if (empl instanceof Manager manager) {
+            removeIndexMap(manager.getFactor(), managersFactor, manager);
+        }
+    }
+
+    private <K, V extends Employee> void removeIndexMap(K key, Map<K, List<V>> map, V empl) {
+        List<V> list = map.get(key);
+        list.remove(empl);
+        if (list.isEmpty()) {
+            map.remove(key);
+        }
     }
 
     @Override
     public int getDepartmentBudget(String department) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDepartmentBudget'");
+        return employeesDepartment.getOrDefault(department, Collections.emptyList())
+        .stream().mapToInt(Employee::computeSalary).sum();
     }
 
     @Override
     public String[] getDepartments() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDepartments'");
+        return employeesDepartment.keySet().stream().sorted().toArray(String[]::new);
     }
 
     @Override
     public Manager[] getManagersWithMostFactor() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getManagersWithMostFactor'");
+        Manager [] res = new Manager[0];
+        if (!managersFactor.isEmpty()) {
+            res = managersFactor.lastEntry().getValue().toArray(res);
+        }
+        return res;
     }
 
 }
