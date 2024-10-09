@@ -111,19 +111,6 @@ public class CompanyImpl implements Company, Persistable {
         return res;
     }
 
-    // @Override
-    // public void saveToFile(String fileName) {
-    // JSONArray jsonArray = new JSONArray();
-    // for (Employee empl : employees.values()) {
-    // jsonArray.put(new JSONObject(empl.toString()));
-    // }
-    // try (PrintWriter writer = new PrintWriter(new FileWriter(fileName))) {
-    // writer.print(jsonArray.toString());
-    // } catch (IOException e) {
-    // throw new RuntimeException(e);
-    // }
-    // }
-
     @Override
     public void saveToFile(String fileName) {
         try (PrintWriter writer = new PrintWriter(fileName)) {
@@ -131,39 +118,24 @@ public class CompanyImpl implements Company, Persistable {
 
             while (iterator.hasNext()) {
                 Employee employee = iterator.next();
-                writer.println(employee.toString()); // Сохраняем каждый объект в JSON формате
+                writer.println(employee.toString());
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    // @Override
-    // public void restoreFromFile(String fileName) {
-    // try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
-    // String jsonArrayStr = reader.readLine();
-    // JSONArray jsonArray = new JSONArray(jsonArrayStr);
-    // for (int i = 0; i < jsonArray.length(); i++) {
-    // JSONObject jsonObject = jsonArray.getJSONObject(i);
-    // Employee empl = Employee.getEmployeeFromJSON(jsonObject.toString());
-    // addEmployee(empl);
-    // }
-    // } catch (IOException e) {
-    // throw new RuntimeException(e);
-    // }
-    // }
-
     @Override
     public void restoreFromFile(String fileName) {
         employees.clear();
         employeesDepartment.clear();
         managersFactor.clear();
-        
+
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                Employee employee = Employee.getEmployeeFromJSON(line); // Восстанавливаем объект из JSON строки
-                addEmployee(employee); // Добавляем восстановленного сотрудника в компанию
+                Employee employee = Employee.getEmployeeFromJSON(line);
+                addEmployee(employee);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
