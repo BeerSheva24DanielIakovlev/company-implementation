@@ -1,33 +1,48 @@
 package telran.employees;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
+import java.util.stream.Collectors;
 
-public class CompanyImpl implements Company{
-   private TreeMap<Long, Employee> employees = new TreeMap<>();
-   private HashMap<String, List<Employee>> employeesDepartment = new HashMap<>();
-   private TreeMap<Float, List<Manager>> managersFactor = new TreeMap<>();
-private class CompanyIterator implements Iterator<Employee> {
-    Iterator<Employee> iterator = employees.values().iterator();
-    Employee lastIterated;
-    @Override
-    public boolean hasNext() {
-       return iterator.hasNext();
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import telran.io.Persistable;
+
+public class CompanyImpl implements Company, Persistable {
+    private TreeMap<Long, Employee> employees = new TreeMap<>();
+    private HashMap<String, List<Employee>> employeesDepartment = new HashMap<>();
+    private TreeMap<Float, List<Manager>> managersFactor = new TreeMap<>();
+
+    private class CompanyIterator implements Iterator<Employee> {
+        Iterator<Employee> iterator = employees.values().iterator();
+        Employee lastIterated;
+
+        @Override
+        public boolean hasNext() {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public Employee next() {
+            lastIterated = iterator.next();
+            return lastIterated;
+        }
+
+        @Override
+        public void remove() {
+            iterator.remove();
+            removeFromIndexMaps(lastIterated);
+        }
     }
 
-    @Override
-    public Employee next() {
-       lastIterated = iterator.next();
-       return lastIterated;
-    }
-    @Override
-    public void remove() {
-       iterator.remove();
-       removeFromIndexMaps(lastIterated);
-    }
-}
     @Override
     public Iterator<Employee> iterator() {
-       return new CompanyIterator();
+        return new CompanyIterator();
     }
 
     @Override
@@ -40,13 +55,11 @@ private class CompanyIterator implements Iterator<Employee> {
     }
 
     private void addIndexMaps(Employee empl) {
-       employeesDepartment.computeIfAbsent(empl.getDepartment(), k -> new ArrayList<>()).add(empl);
-       if (empl instanceof Manager manager) {
+        employeesDepartment.computeIfAbsent(empl.getDepartment(), k -> new ArrayList<>()).add(empl);
+        if (empl instanceof Manager manager) {
             managersFactor.computeIfAbsent(manager.getFactor(), k -> new ArrayList<>()).add(manager);
-       }
+        }
     }
-
-    
 
     @Override
     public Employee getEmployee(long id) {
@@ -56,13 +69,12 @@ private class CompanyIterator implements Iterator<Employee> {
     @Override
     public Employee removeEmployee(long id) {
         Employee empl = employees.remove(id);
-        if(empl == null) {
+        if (empl == null) {
             throw new NoSuchElementException("Not found employee " + id);
         }
         removeFromIndexMaps(empl);
         return empl;
     }
-
 
     private void removeFromIndexMaps(Employee empl) {
         removeIndexMap(empl.getDepartment(), employeesDepartment, empl);
@@ -82,7 +94,7 @@ private class CompanyIterator implements Iterator<Employee> {
     @Override
     public int getDepartmentBudget(String department) {
         return employeesDepartment.getOrDefault(department, Collections.emptyList())
-        .stream().mapToInt(Employee::computeSalary).sum();
+                .stream().mapToInt(Employee::computeSalary).sum();
     }
 
     @Override
@@ -92,11 +104,70 @@ private class CompanyIterator implements Iterator<Employee> {
 
     @Override
     public Manager[] getManagersWithMostFactor() {
-        Manager [] res = new Manager[0];
+        Manager[] res = new Manager[0];
         if (!managersFactor.isEmpty()) {
             res = managersFactor.lastEntry().getValue().toArray(res);
         }
         return res;
+    }
+
+    // @Override
+    // public void saveToFile(String fileName) {
+    // JSONArray jsonArray = new JSONArray();
+    // for (Employee empl : employees.values()) {
+    // jsonArray.put(new JSONObject(empl.toString()));
+    // }
+    // try (PrintWriter writer = new PrintWriter(new FileWriter(fileName))) {
+    // writer.print(jsonArray.toString());
+    // } catch (IOException e) {
+    // throw new RuntimeException(e);
+    // }
+    // }
+
+    @Override
+    public void saveToFile(String fileName) {
+        try (PrintWriter writer = new PrintWriter(fileName)) {
+            Iterator<Employee> iterator = employees.values().iterator();
+
+            while (iterator.hasNext()) {
+                Employee employee = iterator.next();
+                writer.println(employee.toString()); // Сохраняем каждый объект в JSON формате
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // @Override
+    // public void restoreFromFile(String fileName) {
+    // try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+    // String jsonArrayStr = reader.readLine();
+    // JSONArray jsonArray = new JSONArray(jsonArrayStr);
+    // for (int i = 0; i < jsonArray.length(); i++) {
+    // JSONObject jsonObject = jsonArray.getJSONObject(i);
+    // Employee empl = Employee.getEmployeeFromJSON(jsonObject.toString());
+    // addEmployee(empl);
+    // }
+    // } catch (IOException e) {
+    // throw new RuntimeException(e);
+    // }
+    // }
+
+    @Override
+    public void restoreFromFile(String fileName) {
+        employees.clear();
+        employeesDepartment.clear();
+        managersFactor.clear();
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                Employee employee = Employee.getEmployeeFromJSON(line); // Восстанавливаем объект из JSON строки
+                addEmployee(employee); // Добавляем восстановленного сотрудника в компанию
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
