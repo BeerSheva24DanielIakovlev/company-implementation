@@ -1,48 +1,37 @@
 package telran.employees;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.nio.file.*;
 import java.util.*;
-import java.util.stream.Collectors;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import telran.io.Persistable;
 
-public class CompanyImpl implements Company, Persistable {
-    private TreeMap<Long, Employee> employees = new TreeMap<>();
-    private HashMap<String, List<Employee>> employeesDepartment = new HashMap<>();
-    private TreeMap<Float, List<Manager>> managersFactor = new TreeMap<>();
-
-    private class CompanyIterator implements Iterator<Employee> {
-        Iterator<Employee> iterator = employees.values().iterator();
-        Employee lastIterated;
-
-        @Override
-        public boolean hasNext() {
-            return iterator.hasNext();
-        }
-
-        @Override
-        public Employee next() {
-            lastIterated = iterator.next();
-            return lastIterated;
-        }
-
-        @Override
-        public void remove() {
-            iterator.remove();
-            removeFromIndexMaps(lastIterated);
-        }
+public class CompanyImpl implements Company, Persistable{
+   private TreeMap<Long, Employee> employees = new TreeMap<>();
+   private HashMap<String, List<Employee>> employeesDepartment = new HashMap<>();
+   private TreeMap<Float, List<Manager>> managersFactor = new TreeMap<>();
+private class CompanyIterator implements Iterator<Employee> {
+    Iterator<Employee> iterator = employees.values().iterator();
+    Employee lastIterated;
+    @Override
+    public boolean hasNext() {
+       return iterator.hasNext();
     }
 
     @Override
+    public Employee next() {
+       lastIterated = iterator.next();
+       return lastIterated;
+    }
+    @Override
+    public void remove() {
+       iterator.remove();
+       removeFromIndexMaps(lastIterated);
+    }
+}
+    @Override
     public Iterator<Employee> iterator() {
-        return new CompanyIterator();
+       return new CompanyIterator();
     }
 
     @Override
@@ -55,11 +44,13 @@ public class CompanyImpl implements Company, Persistable {
     }
 
     private void addIndexMaps(Employee empl) {
-        employeesDepartment.computeIfAbsent(empl.getDepartment(), k -> new ArrayList<>()).add(empl);
-        if (empl instanceof Manager manager) {
+       employeesDepartment.computeIfAbsent(empl.getDepartment(), k -> new ArrayList<>()).add(empl);
+       if (empl instanceof Manager manager) {
             managersFactor.computeIfAbsent(manager.getFactor(), k -> new ArrayList<>()).add(manager);
-        }
+       }
     }
+
+    
 
     @Override
     public Employee getEmployee(long id) {
@@ -69,12 +60,13 @@ public class CompanyImpl implements Company, Persistable {
     @Override
     public Employee removeEmployee(long id) {
         Employee empl = employees.remove(id);
-        if (empl == null) {
+        if(empl == null) {
             throw new NoSuchElementException("Not found employee " + id);
         }
         removeFromIndexMaps(empl);
         return empl;
     }
+
 
     private void removeFromIndexMaps(Employee empl) {
         removeIndexMap(empl.getDepartment(), employeesDepartment, empl);
@@ -94,7 +86,7 @@ public class CompanyImpl implements Company, Persistable {
     @Override
     public int getDepartmentBudget(String department) {
         return employeesDepartment.getOrDefault(department, Collections.emptyList())
-                .stream().mapToInt(Employee::computeSalary).sum();
+        .stream().mapToInt(Employee::computeSalary).sum();
     }
 
     @Override
@@ -104,7 +96,7 @@ public class CompanyImpl implements Company, Persistable {
 
     @Override
     public Manager[] getManagersWithMostFactor() {
-        Manager[] res = new Manager[0];
+        Manager [] res = new Manager[0];
         if (!managersFactor.isEmpty()) {
             res = managersFactor.lastEntry().getValue().toArray(res);
         }
@@ -114,30 +106,18 @@ public class CompanyImpl implements Company, Persistable {
     @Override
     public void saveToFile(String fileName) {
         try (PrintWriter writer = new PrintWriter(fileName)) {
-            Iterator<Employee> iterator = employees.values().iterator();
-
-            while (iterator.hasNext()) {
-                Employee employee = iterator.next();
-                writer.println(employee.toString());
-            }
-        } catch (IOException e) {
+            forEach(writer::println);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
     public void restoreFromFile(String fileName) {
-        employees.clear();
-        employeesDepartment.clear();
-        managersFactor.clear();
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                Employee employee = Employee.getEmployeeFromJSON(line);
-                addEmployee(employee);
-            }
-        } catch (IOException e) {
+        try (BufferedReader reader = Files.newBufferedReader(Path.of(fileName))) {
+            reader.lines().map(Employee::getEmployeeFromJSON).forEach(this::addEmployee);
+        } catch (NoSuchFileException e) { 
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

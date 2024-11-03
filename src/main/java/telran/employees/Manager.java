@@ -23,10 +23,9 @@ public class Manager extends Employee{
         jsonObj.put("factor", factor);
 
     }
-    
     @Override
     protected void setObject(JSONObject jsonObj) {
         super.setObject(jsonObj);
         factor = jsonObj.getFloat("factor");
-    }
+     }
 }
