@@ -1,16 +1,13 @@
 package telran.employees.db;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeMap;
 
 import telran.employees.*;
 
 public class CompanyDbImpl implements Company{
-
     private CompanyRepository repository;
-
+    
     public CompanyDbImpl(CompanyRepository repository) {
         this.repository = repository;
     }
@@ -22,59 +19,35 @@ public class CompanyDbImpl implements Company{
 
     @Override
     public void addEmployee(Employee empl) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'addEmployee'");
+        repository.insertEmployee(empl);
     }
 
     @Override
     public Employee getEmployee(long id) {
-        return repository.getEmployees()
-                        .stream()
-                        .filter(e -> e.getId() == id)
-                        .findFirst()
-                        .orElse(null);
+        return repository.findEmployee(id);
     }
 
     @Override
     public Employee removeEmployee(long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'removeEmployee'");
+        return repository.removeEmployee(id);
     }
 
     @Override
     public int getDepartmentBudget(String department) {
-        return repository.getEmployees()
-                        .stream()
-                        .filter(e -> department.equals(e.getDepartment()))
-                        .mapToInt(Employee::computeSalary)
-                        .sum();
+        List<Employee> employees = repository.getEmployeesByDepartment(department);
+        return employees.stream().mapToInt(Employee::computeSalary).sum();
     }
 
     @Override
     public String[] getDepartments() {
-        return repository.getEmployees()
-                        .stream()
-                        .map(Employee::getDepartment)
-                        .distinct()
-                        .toArray(String[]::new);
+       List<String> listDepartments = repository.findDepartments();
+       return listDepartments.toArray(String[]::new);
     }
 
     @Override
     public Manager[] getManagersWithMostFactor() {
-        TreeMap<Float, List<Manager>> managersFactor = new TreeMap<>();
-        Manager[] res = new Manager[0];
-
-        for (Employee employee : repository.getEmployees()) {
-            if (employee instanceof Manager manager) {
-                managersFactor.computeIfAbsent(manager.getFactor(), k -> new ArrayList<>()).add(manager);
-            }
-        }
-
-        if (!managersFactor.isEmpty()) {
-            res = managersFactor.lastEntry().getValue().toArray(res);
-        }
-
-        return res;
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getManagersWithMostFactor'");
     }
 
 }
