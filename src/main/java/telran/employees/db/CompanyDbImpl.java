@@ -12,9 +12,34 @@ public class CompanyDbImpl implements Company{
         this.repository = repository;
     }
 
+    private class CompanyImplIterator implements Iterator<Employee> {
+        private Iterator<Employee> iterator = repository.getEmployees().iterator();
+        private Employee prev = null;
+    
+        @Override
+        public boolean hasNext() {
+            return iterator.hasNext();
+        }
+    
+        @Override
+        public Employee next() {
+            return prev = iterator.next();
+        }
+    
+        @Override
+        public void remove() {
+            if (prev == null) {
+                throw new IllegalStateException();
+            }
+            removeEmployee(prev.getId());
+            prev = null;
+        }
+    }
+    
+
     @Override
     public Iterator<Employee> iterator() {
-        return repository.getEmployees().iterator();
+        return new CompanyImplIterator();
     }
 
     @Override
@@ -46,8 +71,8 @@ public class CompanyDbImpl implements Company{
 
     @Override
     public Manager[] getManagersWithMostFactor() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getManagersWithMostFactor'");
+        List<Manager> managersList = repository.findManagersWithMaxFactor();
+        return managersList.toArray(Manager[]::new); 
     }
 
 }
